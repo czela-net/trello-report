@@ -2,16 +2,27 @@ package net.czela.trello
 
 import java.text.SimpleDateFormat
 
+/*
+ * TODO - hlavicka, ucastnici (list)
+ *      - v zapisu se neexportuje termin ukonceni
+ *      - neumi tomzat hotovy ukoly
+ *      - neumi to zapisovat do netadminu (to si musim udelat REST API - nechci list primo do DB)
+ */
+
 class TrelloToWiki {
 
     private TrelloConnector tc
     private MediaWikiFormater wiki
     private File file
+    private boolean archivingEnabled = false
+    private HashSet<String> archivedIds = new HashSet<>();
+
 
     TrelloToWiki(def options) {
         this.tc = new TrelloConnector(options.k, options.t);
         this.wiki = new MediaWikiFormater()
         this.file = new File((options.o) ? options.o : "report.txt")
+        this.archivingEnabled = options.a
     }
 
     private static List<String> ignoredActions = ['updateCard']
@@ -26,11 +37,13 @@ class TrelloToWiki {
             'mcyrin'   : 10791,
             'Daman'    : 10695,
             'Naj Satah': 1138,
+            'naj.satah': 1138,
             'Renda'    : 10140,
             'Matěj'    : 10791,
     ]
 
     def process() {
+        println(" processing ...")
         def boardsJson = tc.trelloGet("members/me/boards");
         boardsJson.each { board ->
             if (board.name == 'Projekty KI') {
@@ -48,7 +61,24 @@ class TrelloToWiki {
         cardsJson.each { card ->
             String comments = processComments(card)
             String customs = processCustomFields(card)
+            //String checkLists = processCheckLists(card)
+                /*
+                     "id": "4eea6ae1a5da7f5a49000092",
+                     "name": "API Checklist",
+                     "checkItems": [{
+                     "state": "complete",
+                     "id": "4eea6aeda5da7f5a490000b9",
+                     "name": "See if there is a call",
+                     "nameData": null,
+                     "pos": 16751
+                     */
             wiki.addSubsection(card.idList, card.name, card.desc + customs + comments)
+
+            if (archivedIds.contains(card.idList)) {
+                println("Archivuji ${card.name}")
+                if (archivingEnabled)
+                    tc.trelloPut("cards/${card.id}?closed=true")
+            }
         }
     }
 
@@ -56,6 +86,10 @@ class TrelloToWiki {
         def listsJson = tc.trelloGet("boards/${board.id}/lists");
         listsJson.each { list ->
             wiki.addSection(list.id, list.name)
+
+            if (list.name == "Hotovo" || list.name == "Zamítnuto") {
+                archivedIds.add(list.id);
+            }
         }
     }
 

@@ -15,3 +15,8 @@ cli.usage()
 
 def p = new TrelloToWiki(options)
 p.process()
+
+/*
+def tc = new TrelloConnector(options.k, options.t);
+tc.trelloPut("cards/5bf294848bd9010fe533bc01?closed=true")
+*/

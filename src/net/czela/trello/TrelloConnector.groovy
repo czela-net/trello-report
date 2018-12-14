@@ -16,9 +16,23 @@ public class TrelloConnector {
 
 
     def trelloGet(String query) {
-        String qm = query.contains("?") ? "" : "?"
+        String qm = query.contains("?") ? "&" : "?"
         def link = urlPrefix + query + qm + urlSuffix;
         URL apiUrl = new URL(link);
         return new JsonSlurper().parse(apiUrl);
+    }
+
+    def trelloPut(String query) {
+        String qm = query.contains("?") ? "&" : "?"
+        def link = urlPrefix + query + qm + urlSuffix;
+        URL apiUrl = new URL(link);
+        HttpURLConnection http = apiUrl.openConnection()
+        http.setDoOutput(false)
+        http.setDoInput(true)
+        http.setRequestMethod('PUT')
+        http.setRequestProperty("Content-Type", "application/json");
+        http.setRequestProperty("Accept", "application/json");
+        int rc = http.getResponseCode()
+        return rc == 200
     }
 }
