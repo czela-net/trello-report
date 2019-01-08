@@ -5,12 +5,15 @@ import java.text.SimpleDateFormat
 public class MediaWikiFormater {
     SimpleDateFormat fmtDate = new SimpleDateFormat("dd.MM.yyyy HH:mm");
 
+    String head = 'no head???'
+
     Map<String, String> report = [:]
 
     Map<String, Integer> sectionNameOrder = [
             "Nové"          : 10,
             "Schváleno"     : 20,
             "Podpora zařídí": 30,
+            "Běží"          : 31,
             "Čekáme"        : 40,
             "Hotovo"        : 90,
             "Zamítnuto"     : 100,
@@ -35,24 +38,36 @@ public class MediaWikiFormater {
         report.put(parentId, section)
     }
 
+    def addHead(def body) {
+        head = "$body\n\n"
+    }
+
     def fmtCustomKV(def key, def value) {
         return "* '''$key''': $value\n"
     }
 
     def fmtNote(Date date, String note) {
         String fmtd = fmtDate.format(date)
-        return "** $fmtd - ${note}\n"
+        if (note.contains("\n")) {
+            note = note.split(/\n/).collect()
+                    .grep().collect({"*** $it".replaceAll(/\*\s+\*/,'**')})
+                    .join("\n")
+            return "** $fmtd :\n${note}\n"
+        } else {
+            return "** $fmtd - ${note}\n"
+        }
     }
 
     def printReport() {
         def sortedSectionIds = sortByValue(sectionOrder)
-        def buf = ""
+        def buf = new StringBuilder()
+        buf.append(head)
         for (String key : sortedSectionIds) {
             if (!report.get(key).endsWith(" ==\n\n")) { // preskoc prazdne panely
-                buf += report.get(key) + "\n\n"
+                buf.append(report.get(key) + "\n\n")
             }
         }
-        return buf
+        return buf.toString()
     }
 
     private static List<String> sortByValue(Map<String, Integer> unsortMap) {
