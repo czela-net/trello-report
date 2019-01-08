@@ -1,0 +1,9 @@
+# trello-report
+
+Groovy scripts to export Trello Boards to MediaWiki format
+Designed for purpose of czela.net
+
+* https://developers.trello.com/
+* https://www.mediawiki.org/wiki/REST_API
+* https://www.czela.net/wiki/
+
