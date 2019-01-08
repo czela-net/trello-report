@@ -5,13 +5,18 @@ def cli = new CliBuilder(usage: "${this.class.simpleName}.groovy -h for this hel
 cli.with {
     h longOpt: 'help', 'Show help'
     a longOpt: 'archive', 'Archivace hotovych a neschvalenych ukolu'
-    k longOpt: 'key', args: 1, argName: 'key', 'Trello API key'
-    t longOpt: 'token', args: 1, argName: 'token', 'Trello API token'
+    k longOpt: 'trello-key', args: 1, argName: 'key', 'Trello API key'
+    t longOpt: 'trello-token', args: 1, argName: 'token', 'Trello API token'
     o longOpt: 'output', args: 1, argName: 'outpuFile', 'Soubor s vystupnim reportem ve formatu mediawiki'
+    u longOpt: 'wiki-user', args: 1, argName: 'wikiUser', 'Wiki User'
+    p longOpt: 'wiki-password', args: 1, argName: 'wikiPassword', 'Wiki Password'
 }
 
 def options = cli.parse(args)
-cli.usage()
+
+if ((!options.k && !options.u) || options.h) {
+    cli.usage()
+}
 
 def p = new TrelloToWiki(options)
 p.process()

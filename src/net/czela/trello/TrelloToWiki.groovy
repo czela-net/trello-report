@@ -16,13 +16,17 @@ class TrelloToWiki {
     private File file
     private boolean archivingEnabled = false
     private HashSet<String> archivedIds = new HashSet<>();
-
+    private WikiConnector wikic
 
     TrelloToWiki(def options) {
         this.tc = new TrelloConnector(options.k, options.t);
         this.wiki = new MediaWikiFormater()
         this.file = new File((options.o) ? options.o : "report.txt")
         this.archivingEnabled = options.a
+
+        if (options.u) {
+            this.wikic = new WikiConnector("https://www.czela.net/wiki/", options.u, options.p)
+        }
     }
 
     private static List<String> ignoredActions = ['updateCard']
@@ -52,8 +56,12 @@ class TrelloToWiki {
             }
         }
 
+        String reportText = wiki.printReport();
         if (file.exists()) file.delete()
-        file << wiki.printReport();
+        file << reportText
+
+        if (wikic)
+            wikic.storeReport("KI", "2019", "1", "20.1.2019", reportText);
     }
 
     private void processCards(board) {
@@ -64,7 +72,7 @@ class TrelloToWiki {
             if (card.name.startsWith("Zápis jednání")) {
                 String checkLists = processCheckLists(card, true)
                 customs = customs.replaceFirst("Šéf Akce","Vede")
-                wiki.addHead(card.desc+"\n"+customs+checkLists)
+                wiki.addHead(card.desc+"\n"+customs+checkLists+"\n\n")
             } else {
                 String checkLists = processCheckLists(card, false)
                 wiki.addSubsection(card.idList, card.name, card.desc +"\n" + customs +"\n"+ checkLists+"\n"+comments)

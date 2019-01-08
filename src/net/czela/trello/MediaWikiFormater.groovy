@@ -49,8 +49,9 @@ public class MediaWikiFormater {
     def fmtNote(Date date, String note) {
         String fmtd = fmtDate.format(date)
         if (note.contains("\n")) {
+            String prefix = note.startsWith('From:')?'   ':'*** '
             note = note.split(/\n/).collect()
-                    .grep().collect({"*** $it".replaceAll(/\*\s+\*/,'**')})
+                    .grep({ it ==~ /.*\S.*/}).collect({"$prefix$it".replaceAll(/\*\s+\*/,'**')})
                     .join("\n")
             return "** $fmtd :\n${note}\n"
         } else {
@@ -67,7 +68,7 @@ public class MediaWikiFormater {
                 buf.append(report.get(key) + "\n\n")
             }
         }
-        return buf.toString()
+        return buf.toString().replaceFirst(/\s+$/,'').replaceAll(/\n\n\n+/,"\n\n");
     }
 
     private static List<String> sortByValue(Map<String, Integer> unsortMap) {
