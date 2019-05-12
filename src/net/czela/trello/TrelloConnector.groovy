@@ -22,6 +22,12 @@ public class TrelloConnector {
         return new JsonSlurper().parse(apiUrl);
     }
 
+    def getStream(String url, File outFile) {
+        if (outFile.exists()) outFile.delete()
+        InputStream is = (new URL(url)).openStream()
+        outFile << is
+    }
+
     def trelloPut(String query) {
         String qm = query.contains("?") ? "&" : "?"
         def link = urlPrefix + query + qm + urlSuffix;

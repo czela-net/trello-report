@@ -1,4 +1,5 @@
 import net.czela.trello.TrelloToWiki
+import groovy.cli.commons.CliBuilder
 
 def cli = new CliBuilder(usage: "${this.class.simpleName}.groovy -h for this help")
 // Create the list of options.

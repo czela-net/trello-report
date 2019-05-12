@@ -27,6 +27,7 @@ class TrelloToWiki {
         if (options.u) {
             this.wikic = new WikiConnector("https://www.czela.net/wiki/", options.u, options.p)
         }
+
     }
 
     private static List<String> ignoredActions = ['updateCard']
@@ -44,6 +45,8 @@ class TrelloToWiki {
             'Renda'    : 10140,
             'Matěj'    : 10791,
             'Majkl'    : 1111,
+            'Asistenka': 12918,
+            'Vašek'    : 10088,
     ]
 
     def process() {
@@ -61,7 +64,7 @@ class TrelloToWiki {
         file << reportText
 
         if (wikic)
-            wikic.storeReport("KI", "2019", "1", "20.1.2019", reportText);
+            wikic.storeReport("KI", "2019", "7", "26.5.2019", reportText);
     }
 
     private void processCards(board) {
@@ -69,13 +72,14 @@ class TrelloToWiki {
         cardsJson.each { card ->
             String comments = processComments(card)
             String customs = processCustomFields(card)
+            String attachments = processAttachments(card)
             if (card.name.startsWith("Zápis jednání")) {
                 String checkLists = processCheckLists(card, true)
                 customs = customs.replaceFirst("Šéf Akce","Vede")
                 wiki.addHead(card.desc+"\n"+customs+checkLists+"\n\n")
             } else {
                 String checkLists = processCheckLists(card, false)
-                wiki.addSubsection(card.idList, card.name, card.desc +"\n" + customs +"\n"+ checkLists+"\n"+comments)
+                wiki.addSubsection(card.idList, card.name, card.desc +"\n" + customs +"\n"+ checkLists+"\n"+attachments+"\n"+comments)
             }
 
             if (archivedIds.contains(card.idList)) {
@@ -106,7 +110,7 @@ class TrelloToWiki {
                     sb.append("\n* $listName: $listItems\n");
                 } else {
                     String listItems = list.sort().collect({ "** $it" }).join("\n")
-                    "\n* $listName: $listItems"
+                    sb.append("\n* $listName:\n$listItems")
                 }
             }
         }
@@ -209,6 +213,48 @@ class TrelloToWiki {
             }
         }
         customs
+    }
+
+    private String processAttachments(def card) {
+        def attachments = "\n\n* '''Přílohy:'''\n";
+        def cfs = tc.trelloGet("cards/${card.id}/attachments");
+        boolean showAttachments = false;
+        cfs.each { cf ->
+            String id = cf.id
+            int size = cf.bytes
+            String name = cf.name
+            String url = cf.url
+
+            if (name.endsWith("jpg")) {
+                def maxSize = 2 * 1024 * 1024
+                if (size > maxSize) {
+                    String bestUrl = null
+                    int bestSize = 0
+                    cf.previews.each { preview ->
+                        int psize = preview.bytes
+                        if (psize > 0 && psize < maxSize && psize > bestSize) {
+                            bestSize = psize
+                            bestUrl = preview.url
+                        }
+                    }
+                    if (bestSize > 0) {
+                        url = bestUrl; // nahraju zmenseninu
+                    }
+                }
+            }
+
+            String mimeType = cf.mimeType
+            println "Attachment: $id , $name , $url, $mimeType"
+            File mediaFile = new File(id+'-'+name.replaceAll(/[^A-Za-z0-9._-]/,'_'));
+            tc.getStream(url, mediaFile);
+            println "  upload to wiki"
+            wikic.copyImage(mediaFile, name);
+
+            attachments += "** [[File:$name]]\n"
+            showAttachments = true;
+
+        }
+        return showAttachments?attachments:""
     }
 
     def warn(def s) {

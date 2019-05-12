@@ -1,7 +1,10 @@
 package net.czela.trello
 
+import net.sourceforge.jwbf.core.actions.util.HttpAction
 import net.sourceforge.jwbf.core.contentRep.Article
+import net.sourceforge.jwbf.mediawiki.actions.editing.FileUpload
 import net.sourceforge.jwbf.mediawiki.bots.MediaWikiBot
+import net.sourceforge.jwbf.mediawiki.contentRep.SimpleFile
 
 @Grab (group='net.sourceforge', module= 'jwbf', version='3.1.1')
 @Grab (group='org.slf4j', module='slf4j-log4j12', version='1.7.2')
@@ -48,6 +51,12 @@ class WikiConnector {
         } else {
             println("  Report se nezmenil")
         }
+    }
+
+    def copyImage(File file, String label) {
+       def sf = new SimpleFile(label, file)
+        def fu = new FileUpload(sf, wikiBot)
+        wikiBot.getPerformedAction(fu);
     }
 }
 
