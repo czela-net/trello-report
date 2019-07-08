@@ -3,10 +3,10 @@ package net.czela.trello
 import java.text.SimpleDateFormat
 
 /*
- * TODO - hlavicka, ucastnici (list)
- *      - v zapisu se neexportuje termin ukonceni
- *      - neumi tomzat hotovy ukoly
- *      - neumi to zapisovat do netadminu (to si musim udelat REST API - nechci list primo do DB)
+ * TODO
+ *      - exporter si nepamatuje ze už něco zaarchivoval, pokud tedy spuutime generator podruhé (nez navýšení čísla zápisu) část ukolu se ztratí (hotové ukoly)
+ *      - u exporterů není vyřešeno automatické číslováni verzi zápisu
+ *      - není dodělaná integrace s novou evidencí
  */
 
 class TrelloToWiki {
@@ -64,7 +64,7 @@ class TrelloToWiki {
         file << reportText
 
         if (wikic)
-            wikic.storeReport("KI", "2019", "7", "26.5.2019", reportText);
+            wikic.storeReport("KI", "2019", "9", "7.7.2019", reportText);
     }
 
     private void processCards(board) {
@@ -129,7 +129,7 @@ class TrelloToWiki {
     }
 
     /**
-     * Trello radi poznamky tak ze posledni je jako prvni, ale v zapisu chceme opacne poradi. navic nas zajimaji jen poznamky 8 max tydnu stare
+     * Trello řadí poznamky tak, že poslední vložená je na první místě, ale v zápisu chceme opačné pořadí. Navíc nás zajímají jen poznámky staré max 8 týdnů
      *
      * @param card
      * @return
@@ -226,7 +226,7 @@ class TrelloToWiki {
             String url = cf.url
 
             if (name.endsWith("jpg")) {
-                def maxSize = 2 * 1024 * 1024
+                def maxSize = 1.5 * 1024 * 1024 // s obrazkem 1.8MB mi wiki vracela chybu :-(
                 if (size > maxSize) {
                     String bestUrl = null
                     int bestSize = 0

@@ -26,6 +26,7 @@ public class TrelloConnector {
         if (outFile.exists()) outFile.delete()
         InputStream is = (new URL(url)).openStream()
         outFile << is
+        is.close();
     }
 
     def trelloPut(String query) {
