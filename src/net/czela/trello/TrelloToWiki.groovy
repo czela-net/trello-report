@@ -18,11 +18,23 @@ class TrelloToWiki {
     private HashSet<String> archivedIds = new HashSet<>();
     private WikiConnector wikic
 
+    private String boardName
+    private String wikiGroup
+    private String year
+    private String date
+    private String reportNo
+
+
     TrelloToWiki(def options) {
         this.tc = new TrelloConnector(options.k, options.t);
         this.wiki = new MediaWikiFormater()
         this.file = new File((options.o) ? options.o : "report.txt")
         this.archivingEnabled = options.a
+        this.wikiGroup = options.g?options.g:'KI'
+        this.boardName = options.b?options.b:'Projekty KI'
+        this.year = options.y?options.y:'2099'
+        this.date = options.d?options.d:'1.1.2099'
+        this.reportNo = options.n?options.n:'99'
 
         if (options.u) {
             this.wikic = new WikiConnector("https://www.czela.net/wiki/", options.u, options.p)
@@ -53,18 +65,22 @@ class TrelloToWiki {
         println(" processing ...")
         def boardsJson = tc.trelloGet("members/me/boards");
         boardsJson.each { board ->
-            if (board.name == 'Projekty KI') {
+            if (board.name == boardName) {
                 processLists(board)
                 processCards(board)
+            } else {
+                println(" board ${board.name} is skipped.")
             }
         }
 
-        String reportText = wiki.printReport();
+        String reportText = wiki.printReport(this.archivingEnabled);
         if (file.exists()) file.delete()
         file << reportText
 
-        if (wikic)
-            wikic.storeReport("KI", "2019", "9", "7.7.2019", reportText);
+        if (wikic) {
+            //wikic.storeReport("KI", "2019", "12", "8.9.2019", reportText);
+            wikic.storeReport(this.wikiGroup,  this.year, this.reportNo, this.date, reportText);
+        }
     }
 
     private void processCards(board) {
@@ -206,7 +222,11 @@ class TrelloToWiki {
                     } else {
                         warn("${card.name} - pole Hlasování obsahuje nesmysl")
                     }
+                } else if (cfLabel == 'Typ akce') {
+                    customs += wiki.fmtCustomKV(cfLabel, cfValue)
                 } else if (cfLabel == 'id akce') {
+                    // ignore
+                } else {
                     warn("${card.name} - unknown custom field $cfLabel")
                     customs += wiki.fmtCustomKV(cfLabel, cfValue)
                 }
@@ -220,39 +240,38 @@ class TrelloToWiki {
         def cfs = tc.trelloGet("cards/${card.id}/attachments");
         boolean showAttachments = false;
         cfs.each { cf ->
-            String id = cf.id
-            int size = cf.bytes
-            String name = cf.name
-            String url = cf.url
+            if (cf.isUpload) {
+                String id = cf.id
+                int size = cf.bytes
+                String name = cf.name
+                String url = cf.url
 
-            if (name.endsWith("jpg")) {
-                def maxSize = 1.5 * 1024 * 1024 // s obrazkem 1.8MB mi wiki vracela chybu :-(
-                if (size > maxSize) {
-                    String bestUrl = null
-                    int bestSize = 0
-                    cf.previews.each { preview ->
-                        int psize = preview.bytes
-                        if (psize > 0 && psize < maxSize && psize > bestSize) {
-                            bestSize = psize
-                            bestUrl = preview.url
+                if (name.endsWith("jpg")) {
+                    def maxSize = 1.5 * 1024 * 1024 // s obrazkem 1.8MB mi wiki vracela chybu :-(
+                    if (size > maxSize) {
+                        String bestUrl = null
+                        int bestSize = 0
+                        cf.previews.each { preview ->
+                            int psize = preview.bytes
+                            if (psize > 0 && psize < maxSize && psize > bestSize) {
+                                bestSize = psize
+                                bestUrl = preview.url
+                            }
+                        }
+                        if (bestSize > 0) {
+                            url = bestUrl; // nahraju zmenseninu
                         }
                     }
-                    if (bestSize > 0) {
-                        url = bestUrl; // nahraju zmenseninu
-                    }
                 }
+
+                String mimeType = cf.mimeType
+                File mediaFile = new File(new File('cache'), id+'-'+name.replaceAll(/[^A-Za-z0-9._-]/,'_'));
+                tc.getStream(url, mediaFile);
+                wikic.copyImage(mediaFile, name);
+
+                attachments += "** [[File:$name]]\n"
+                showAttachments = true;
             }
-
-            String mimeType = cf.mimeType
-            println "Attachment: $id , $name , $url, $mimeType"
-            File mediaFile = new File(id+'-'+name.replaceAll(/[^A-Za-z0-9._-]/,'_'));
-            tc.getStream(url, mediaFile);
-            println "  upload to wiki"
-            wikic.copyImage(mediaFile, name);
-
-            attachments += "** [[File:$name]]\n"
-            showAttachments = true;
-
         }
         return showAttachments?attachments:""
     }

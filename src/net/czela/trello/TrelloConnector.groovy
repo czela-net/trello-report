@@ -2,7 +2,7 @@ package net.czela.trello
 
 import groovy.json.JsonSlurper
 
-public class TrelloConnector {
+class TrelloConnector {
     String myKey = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
     String myToken = 'xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx';
 
@@ -23,6 +23,12 @@ public class TrelloConnector {
     }
 
     def getStream(String url, File outFile) {
+        if (outFile.exists() && outFile.size() > 100) {
+            println "  file exists. skip download."
+            return
+        }
+
+        println "  download file from $url"
         if (outFile.exists()) outFile.delete()
         InputStream is = (new URL(url)).openStream()
         outFile << is

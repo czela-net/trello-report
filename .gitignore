@@ -1,3 +1,6 @@
 .idea
 out
+cache
 *.iml
+gen_zapis_ki.sh
+gen_zapis_rada.sh

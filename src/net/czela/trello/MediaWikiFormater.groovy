@@ -17,6 +17,10 @@ public class MediaWikiFormater {
             "Čekáme"        : 40,
             "Hotovo"        : 90,
             "Zamítnuto"     : 100,
+
+            "Nové body na další sezení Rady": 11,
+            "ŘEŠÍ SE ..."                   : 21,
+            "Archiv"                        : 90,
     ]
 
     int sectionOrderPrio = 50;
@@ -59,9 +63,12 @@ public class MediaWikiFormater {
         }
     }
 
-    def printReport() {
+    def printReport(boolean finalVersion) {
         def sortedSectionIds = sortByValue(sectionOrder)
         def buf = new StringBuilder()
+        if (!finalVersion) {
+            buf.append("Draft: ")
+        }
         buf.append(head)
         for (String key : sortedSectionIds) {
             if (!report.get(key).endsWith(" ==\n\n")) { // preskoc prazdne panely
