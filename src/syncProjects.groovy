@@ -1,6 +1,7 @@
 import net.czela.trello.Helper
 import net.czela.trello.NetadminConnector
 import net.czela.trello.TrelloConnector
+import net.czela.trello.model.Card
 
 Helper.openProps()
 
@@ -89,21 +90,16 @@ class SyncProjects {
                     def c2 = convertAkceJson2Card(nc.getAkceById(c.akceId))
                     if (! equalCards(c, c2)) {
                         println("je potrbeba updatovat: $c2")
+                        // TODO
+                    } else {
+                        println("${c.name} is Ok - skip")
                     }
-                }
-                /*
-                if (c.akceId == null) {
-                    c.akceId = nc.createAkce(c)
-                    tc.saveAkceId(c)
-                    tc.setComment(c, "Akce zapsana")
                 } else {
-                    Card c2 = convertAkceJson2Card(nc.getAkceById(c.akceId))
-                    if (!equalCards(c2, c)) {
-                        nc.saveAkce(c)
-                        tc.setComment(c, "Zmena akce zapsana")
-                    }
+                    Long akceId = nc.createAkce(c)
+                    assert akceId != null && akceId > 0L
+                    setAkceId(c.id, akceId)
+                    tc.setComment(c.id, "Akce zapsana do [netaminu](https://www.czela.net/netadmin/sef/show_akce.php?id=${akceId})!")
                 }
-                 */
             }
         }
     }
@@ -190,7 +186,7 @@ class SyncProjects {
     }
 
     private CustoFieldDef getCustomFieldDefinition(String cfdId) {
-        println "CF: $cfdId"
+        //println "CF: $cfdId"
         def cfDefJson = tc.trelloGet("customFields/${cfdId}")
         CustoFieldDef cfDef = new CustoFieldDef()
         cfDef.name = cfDefJson.name
@@ -222,28 +218,7 @@ class SyncProjects {
         System.err.println("WARN: $msg")
     }
 
-    class Card {
-        String id, name, userName, typeName
-        Long budget = 0L
-        boolean approved = false
-        Long userId, akceId, typeId, statusId
 
-        @Override
-        public String toString() {
-            return "Card{" +
-                    "id='" + id + '\'' +
-                    ", akceId=" + akceId +
-                    ", name='" + name + '\'' +
-                    ", budget=" + budget +
-                    ", approved=" + approved +
-                    ", statusId=" + statusId +
-                    ", userName='" + userName + '\'' +
-                    ", userId=" + userId +
-                    ", typeName='" + typeName + '\'' +
-                    ", typeId=" + typeId +
-                    '}';
-        }
-    }
 
     class CustoFieldDef {
         String name, type, id

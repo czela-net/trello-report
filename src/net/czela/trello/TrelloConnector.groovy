@@ -57,9 +57,31 @@ class TrelloConnector {
         return rc == 200
     }
 
+    def trelloPost(String query, String body = null) {
+        String qm = query.contains("?") ? "&" : "?"
+        def link = urlPrefix + query + qm + urlSuffix
+        URL apiUrl = new URL(link)
+        HttpURLConnection http = apiUrl.openConnection() as HttpURLConnection
+        http.setRequestMethod('POST')
+        http.setRequestProperty("Content-Type", "application/json")
+        http.setRequestProperty("Accept", "application/json")
+        http.setDoInput(true)
+        if (body) {
+            http.setDoOutput(true)
+            def os = http.outputStream
+            os.write(body.getBytes())
+            os.flush()
+            os.close()
+        } else {
+            http.setDoOutput(false)
+        }
+        int rc = http.getResponseCode()
+        return rc == 200
+    }
 
 
     private def customFieldsMap = [:]
+
     def getCustomFieldId(def cardId, String label) {
         def key = labelTransform(label)
         def id = customFieldsMap.get(key)
@@ -82,5 +104,11 @@ class TrelloConnector {
 
     static String labelTransform(String label) {
         return label.toUpperCase().replaceAll(/[^A-Z0-9_]+/,'_').toString()
+    }
+
+    void setComment(String cardId, String comment) {
+        assert comment != null && cardId != null
+        comment = java.net.URLEncoder.encode(comment, "UTF-8")
+        trelloPost("cards/${cardId}/actions/comments?text=${comment}")
     }
 }

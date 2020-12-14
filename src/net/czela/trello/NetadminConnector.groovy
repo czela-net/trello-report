@@ -1,6 +1,7 @@
 package net.czela.trello
 
 import groovy.json.JsonSlurper
+import net.czela.trello.model.Card
 
 /**
  * GraphQL connector to netadmin
@@ -58,15 +59,25 @@ class NetadminConnector {
         }
     }
 
-    def createAkce(Map akce) {
-        if (akce != null && akce.nazev != null && akce.sekceid != null && akce.userid != null) {
+    def createAkce(Card akce) {
+        Map<String, Object> map = [
+                'nazev': akce.name,
+                'sekceid': akce.typeId,
+                'userid': akce.userId,
+                'cena': akce.budget as String,
+        ]
+        return createAkce(map)
+    }
+
+    Long createAkce(Map akce) {
+        if (akce != null && akce.nazev != null && akce.sekceid != null && akce.userid != null && (akce.cena as Long) > 0) {
             def map = [
                     'stav': 0,
                     'obsah': "-",
                     'cena': "0",
                     'schvaleno': "-",
                     'ukonceno': "-",
-                    'smlouvanutna': "-"
+                    'smlouvanutna': 0
             ]
             map.putAll(akce)
             def params = map.collect({ entry ->
@@ -74,7 +85,9 @@ class NetadminConnector {
                 "${entry.key}: ${vv}"
             }).join(", ")
             def jsonAkce = doQuery("""{ "query" : "mutation { addAction( ${params} ) { id }}" }""")
-            return jsonAkce.id
+            return jsonAkce.data.addAction.id as Long
+        } else {
+            println("WARN akce je spatne, neco chybi! $akce")
         }
     }
 
