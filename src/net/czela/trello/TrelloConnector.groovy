@@ -106,9 +106,14 @@ class TrelloConnector {
         return label.toUpperCase().replaceAll(/[^A-Z0-9_]+/,'_').toString()
     }
 
-    void setComment(String cardId, String comment) {
+    void addComment(String cardId, String comment) {
         assert comment != null && cardId != null
         comment = java.net.URLEncoder.encode(comment, "UTF-8")
         trelloPost("cards/${cardId}/actions/comments?text=${comment}")
+    }
+
+    void moveCardToList(String cardId, String listId) {
+        assert listId != null && cardId != null
+        trelloPut("cards/${cardId}?idList=${listId}&pos=bottom")
     }
 }

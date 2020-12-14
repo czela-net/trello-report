@@ -16,6 +16,7 @@ class SyncProjects {
     String myBoardName
     String approvedListName
     String myBoardId
+    String activeListName
 
     Map<String,String> user2idMap = [:]
     Map<String,String> taskType2idMap = [:]
@@ -29,6 +30,7 @@ class SyncProjects {
         this.nc = new NetadminConnector();
         this.myBoardName = Helper.get('app.netadmin.sync.akce.board.name')
         this.approvedListName = Helper.get('app.netadmin.sync.akce.approvedList.name')
+        this.activeListName = Helper.get('app.netadmin.sync.akce.activeList.name')
 
         preloadCustomFields = Helper.getList('app.netadmin.list.preload.trello.customField.id')
         user2idMap = Helper.getMap('app.netadmin.map.users.alias')
@@ -79,6 +81,7 @@ class SyncProjects {
         }
 
         myBoardId = getBoardByName(myBoardName)
+        def activeListId = getListByName(myBoardId, activeListName)
 
         List<Card> approvedCards = getCardsOnLists(myBoardId, approvedListName)
 
@@ -93,12 +96,13 @@ class SyncProjects {
                         // TODO
                     } else {
                         println("${c.name} is Ok - skip")
+                        tc.moveCardToList(c.id, activeListId)
                     }
                 } else {
                     Long akceId = nc.createAkce(c)
                     assert akceId != null && akceId > 0L
                     setAkceId(c.id, akceId)
-                    tc.setComment(c.id, "Akce zapsana do [netaminu](https://www.czela.net/netadmin/sef/show_akce.php?id=${akceId})!")
+                    tc.addComment(c.id, "Akce je zapsana do [netaminu](https://www.czela.net/netadmin/sef/show_akce.php?id=${akceId})!")
                 }
             }
         }
