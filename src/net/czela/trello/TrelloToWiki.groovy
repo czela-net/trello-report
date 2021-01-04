@@ -32,11 +32,11 @@ class TrelloToWiki {
         this.wiki = new MediaWikiFormater()
         this.file = new File((options.o) ? options.o : "report.txt")
         this.archivingEnabled = options.a
-        this.wikiGroup = options.g?options.g:'KI'
-        this.boardName = options.b?options.b:'Projekty KI'
-        this.year = options.y?options.y:'2099'
-        this.date = options.d?options.d:'1.1.2099'
-        this.reportNo = options.n?options.n:'99'
+        this.wikiGroup = options.g ? options.g : 'KI'
+        this.boardName = options.b ? options.b : 'Projekty KI'
+        this.year = options.y ? options.y : '2099'
+        this.date = options.d ? options.d : '1.1.2099'
+        this.reportNo = options.n ? options.n : '99'
 
         if (options.u) {
             this.wikic = new WikiConnector("https://www.czela.net/wiki/", options.u, options.p)
@@ -67,35 +67,35 @@ class TrelloToWiki {
             'Forest'    : 12394,
             'Pawel'     : 1095,
             'Milan'     : 1485,
+            'Kužel'     : 1133,
     ]
 
     private static Map<String, Long> activityTypeMap = [
-            "KI - projekty": 5L,
-            "KI - optika a LAN": 6L,
-            "KI - bezdrátové body": 7L,
-            "KI - upgrade sítě": 8L,
-            "KI - výzkum": 9L,
-            "fix - podpora": 15L,
+            "KI - projekty"        : 5L,
+            "KI - optika a LAN"    : 6L,
+            "KI - bezdrátové body" : 7L,
+            "KI - upgrade sítě"    : 8L,
+            "KI - výzkum"          : 9L,
+            "fix - podpora"        : 15L,
             "fix - nájem a energie": 16L,
-            "fix - licence ČTU": 18L,
-            "fix - konektivita": 19L,
-            "fix - asistentka": 20L,
-            "fix - slevy na PHP": 17L,
-            "PHP - čerpání": 4L,
-            "PHP- čerpání": 4L,
-            "akce a párty": 10L,
-            "slevy": 11L,
-            "chod sdružení": 12L,
+            "fix - licence ČTU"    : 18L,
+            "fix - konektivita"    : 19L,
+            "fix - asistentka"     : 20L,
+            "fix - slevy na PHP"   : 17L,
+            "PHP - čerpání"        : 4L,
+            "PHP- čerpání"         : 4L,
+            "akce a párty"         : 10L,
+            "slevy"                : 11L,
+            "chod sdružení"        : 12L,
             "účetnictví, pojištění": 13L,
-            "externí služby": 14L,
-            "podpora": 15L,
-            "nájem a energie": 16L,
-            "slevy na PHP": 17L,
-            "licence ČTÚ": 18L,
-            "konektivita": 19L,
-            "asistentka": 20L,
+            "externí služby"       : 14L,
+            "podpora"              : 15L,
+            "nájem a energie"      : 16L,
+            "slevy na PHP"         : 17L,
+            "licence ČTÚ"          : 18L,
+            "konektivita"          : 19L,
+            "asistentka"           : 20L,
     ]
-
 
 
     def process() {
@@ -116,7 +116,7 @@ class TrelloToWiki {
 
         if (wikic) {
             //wikic.storeReport("KI", "2019", "12", "8.9.2019", reportText);
-            wikic.storeReport(this.wikiGroup,  this.year, this.reportNo, this.date, reportText)
+            wikic.storeReport(this.wikiGroup, this.year, this.reportNo, this.date, reportText)
         }
     }
 
@@ -124,35 +124,22 @@ class TrelloToWiki {
         def cardsJson = tc.trelloGet("boards/${board.id}/cards")
         cardsJson.each { card ->
             String comments = processComments(card)
-            NetadminAkce akce =  processCustomFields(card)
+            NetadminAkce akce = processCustomFields(card)
             String customs = akce.wikiText
             String attachments = processAttachments(card)
             if (card.name.startsWith("Zápis jednání")) {
                 String checkLists = processCheckLists(card, true)
-                customs = customs.replaceFirst("Šéf Akce","Vede")
-                wiki.addHead(card.desc+"\n"+customs+checkLists+"\n\n")
+                customs = customs.replaceFirst("Šéf Akce", "Vede")
+                wiki.addHead(card.desc + "\n" + customs + checkLists + "\n\n")
             } else {
                 String checkLists = processCheckLists(card, false)
-                wiki.addSubsection(card.idList, card.name, card.desc +"\n" + customs +"\n"+ checkLists+"\n"+attachments+"\n"+comments)
+                wiki.addSubsection(card.idList, card.name, card.desc + "\n" + customs + "\n" + checkLists + "\n" + attachments + "\n" + comments)
             }
 
             if (archivedIds.contains(card.idList)) {
                 if (archivingEnabled) {
                     println("Archivuji ${card.name}")
                     tc.trelloPut("cards/${card.id}?closed=true")
-                }
-            }
-
-            if (listIdApproved == card.idList) {
-                if (akce.isValid()) {
-                    if (archivingEnabled) {
-                    // zapis do netadmina
-                    // uloz akce id
-                    // pridej komentar zapsano
-                    // presun kartu do bezi
-                    }
-                } else {
-                    warn(akce.getValidationStatus())
                 }
             }
         }
@@ -331,7 +318,7 @@ class TrelloToWiki {
                 }
 
                 String mimeType = cf.mimeType
-                File mediaFile = new File(new File('cache'), id+'-'+name.replaceAll(/[^A-Za-z0-9._-]/,'_'))
+                File mediaFile = new File(new File('cache'), id + '-' + name.replaceAll(/[^A-Za-z0-9._-]/, '_'))
                 tc.getStream(url, mediaFile)
 
                 if (size <= maxSize && (name.endsWith('png') || name.endsWith('gif') || name.endsWith('jpg') || name.endsWith('jpeg')
@@ -345,7 +332,7 @@ class TrelloToWiki {
                 }
             }
         }
-        return showAttachments?attachments:""
+        return showAttachments ? attachments : ""
     }
 
     def warn(def s) {

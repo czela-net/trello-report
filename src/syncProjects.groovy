@@ -3,23 +3,26 @@ import net.czela.trello.NetadminConnector
 import net.czela.trello.TrelloConnector
 import net.czela.trello.model.Card
 
+
 Helper.openProps()
 
 def sp = new SyncProjects(Helper.get("trello.api.access.key"), Helper.get("trello.api.access.token"))
 sp.process()
+
 
 /**
  * Synchronizace projektu z trello do netadmina
  *
  */
 class SyncProjects {
+    boolean dry = false
     String myBoardName
     String approvedListName
     String myBoardId
     String activeListName
 
-    Map<String,String> user2idMap = [:]
-    Map<String,String> taskType2idMap = [:]
+    Map<String, String> user2idMap = [:]
+    Map<String, String> taskType2idMap = [:]
     List<String> preloadCustomFields = []
 
     TrelloConnector tc
@@ -87,22 +90,36 @@ class SyncProjects {
 
         for (Card c : approvedCards) {
             if (c.budget > 0 && c.approved) {
-                println(c)
+                assert c.userId != null, "Spatny sef akce ${c.userName}"
+                assert c.typeId != null, "Spatny typ akce ${c.typeName}"
+
+                //println(c)
                 /* 2. porovnani hodnot netadmin, trello */
                 if (c.akceId != null) {
                     def c2 = convertAkceJson2Card(nc.getAkceById(c.akceId))
-                    if (! equalCards(c, c2)) {
-                        println("je potrbeba updatovat: $c2")
-                        // TODO
+                    if (!equalCards(c, c2)) {
+                        //println("je potrbeba updatovat: $c2")
+                        def msg = showDiffs(c2, c)
+                        println(msg)
+                        if (!dry) {
+                            nc.updateAkce(c)
+                            tc.moveCardToList(c.id, activeListId)
+                            tc.addComment(c.id, msg)
+                        }
                     } else {
                         println("${c.name} is Ok - skip")
-                        tc.moveCardToList(c.id, activeListId)
+                        if (!dry) {
+                            tc.moveCardToList(c.id, activeListId)
+                        }
                     }
                 } else {
-                    Long akceId = nc.createAkce(c)
-                    assert akceId != null && akceId > 0L
-                    setAkceId(c.id, akceId)
-                    tc.addComment(c.id, "Akce je zapsana do [netaminu](https://www.czela.net/netadmin/sef/show_akce.php?id=${akceId})!")
+                    println("Nova akce \"${c.name}\" je potreba ji zapsat!")
+                    if (!dry) {
+                        Long akceId = nc.createAkce(c)
+                        assert akceId != null && akceId > 0L
+                        setAkceId(c.id, akceId)
+                        tc.addComment(c.id, "Akce je zapsana do [netaminu](https://www.czela.net/netadmin/sef/show_akce.php?id=${akceId})!")
+                    }
                 }
             }
         }
@@ -112,6 +129,8 @@ class SyncProjects {
         def o = new Card()
         o.id = json.id
         o.name = json.name
+        o.shortLink = "https://trello.com/c/${json.shortLink}"
+        o.desc = json.desc
         getCustomFieldValues(o)
         if (o.userName != null && o.userId == null) {
             o.userId = user2idMap.get(o.userName) as Long
@@ -136,6 +155,31 @@ class SyncProjects {
 
     boolean equalCards(Card a, Card b) {
         return a.name == b.name && a.budget == b.budget && a.userId == b.userId && a.akceId == b.akceId && a.typeId == b.typeId
+    }
+
+    String showDiffs(Card a, Card b) {
+        def arr = []
+        if (a.name != b.name) arr.add("akce se přejmenovala na \"${b.name}\"")
+        if (a.budget != b.budget) {
+            if (a.budget < b.budget) {
+                def diff = b.budget - a.budget
+                if (a.budget > 0) {
+                    def diffpr = (int) (1 + 100 * diff / a.budget)
+                    arr.add("akce má navýšený rozpočet z ${a.budget}Kč na ${b.budget}Kč, to jest o ${diff}Kč (${diffpr}%)")
+                } else {
+                    arr.add("akce má navýšený rozpočet z ${a.budget}Kč na ${b.budget}Kč")
+                }
+            } else {
+                arr.add("akce má snížený rozpočet z ${a.budget}Kč na ${b.budget}Kč")
+            }
+        }
+        if (a.userId != b.userId) arr.add("akci kočíruje nový šef ${b.userName}")
+        if (a.typeId != b.typeId) arr.add("oprava činnosti na \"${b.typeName}\"")
+        if (arr.size() > 0) {
+            return "Změna akce \"[${a.name}](https://www.czela.net/netadmin/sef/show_akce.php?id=${a.akceId})\": " + arr.join(", ")
+        } else {
+            return "Akce je beze změn"
+        }
     }
 
     def setAkceId(def cardId, long akceId) {
@@ -223,10 +267,9 @@ class SyncProjects {
     }
 
 
-
     class CustoFieldDef {
         String name, type, id
-        Map<String,String> options = [:]
+        Map<String, String> options = [:]
 
         private String listValue(def cf) {
             def v = options.get(cf.idValue)
@@ -251,6 +294,7 @@ class SyncProjects {
             }
             return r
         }
+
         Long getLongValue(def cf) {
             getValue(cf) as Long
         }

@@ -1,7 +1,7 @@
 package net.czela.trello.model
 
 class Card {
-    String id, name, userName, typeName
+    String id, name, userName, typeName, shortLink, desc
     Long budget = 0L
     boolean approved = false
     Long userId, akceId, typeId, statusId
