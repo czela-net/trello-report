@@ -15,7 +15,8 @@ sp.process()
  *
  */
 class SyncProjects {
-    boolean dry = false
+    boolean dry = true
+    boolean moveCards = false
     String myBoardName
     String approvedListName
     String myBoardId
@@ -103,13 +104,15 @@ class SyncProjects {
                         println(msg)
                         if (!dry) {
                             nc.updateAkce(c)
-                            tc.moveCardToList(c.id, activeListId)
                             tc.addComment(c.id, msg)
+                            if (moveCards)
+                                tc.moveCardToList(c.id, activeListId)
                         }
                     } else {
-                        println("${c.name} is Ok - skip")
+                        println("${c.name} is Ok - move to bezi")
                         if (!dry) {
-                            tc.moveCardToList(c.id, activeListId)
+                            if (moveCards)
+                                tc.moveCardToList(c.id, activeListId)
                         }
                     }
                 } else {
@@ -119,6 +122,8 @@ class SyncProjects {
                         assert akceId != null && akceId > 0L
                         setAkceId(c.id, akceId)
                         tc.addComment(c.id, "Akce je zapsana do [netaminu](https://www.czela.net/netadmin/sef/show_akce.php?id=${akceId})!")
+                        if (moveCards)
+                            tc.moveCardToList(c.id, activeListId)
                     }
                 }
             }

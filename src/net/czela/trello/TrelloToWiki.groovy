@@ -68,6 +68,7 @@ class TrelloToWiki {
             'Pawel'     : 1095,
             'Milan'     : 1485,
             'Kužel'     : 1133,
+            'Vlasten'   : 10921,
     ]
 
     private static Map<String, Long> activityTypeMap = [
