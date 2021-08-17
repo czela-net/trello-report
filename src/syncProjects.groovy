@@ -1,12 +1,38 @@
 import net.czela.trello.Helper
 import net.czela.trello.NetadminConnector
 import net.czela.trello.TrelloConnector
+import net.czela.trello.TrelloToWiki
 import net.czela.trello.model.Card
 
+import groovy.cli.commons.CliBuilder
 
-Helper.openProps()
+def cli = new CliBuilder(usage: "${this.class.simpleName}.groovy -h for this help")
+// Create the list of options.
+cli.with {
+    h longOpt: 'help', 'Show help'
+    m longOpt: 'move', 'move task to bezi'
+    c longOpt: 'config', args: 1, argName: 'config', 'properties suffix'
+}
+
+def options = cli.parse(args)
+
+if (options.h) {
+    cli.usage()
+    System.exit(0)
+}
+
+String propertyFile = "netadmin.properties"
+if (options.c) {
+    propertyFile = "netadmin.properties.${options.c}"
+}
+Helper.openProps(propertyFile)
 
 def sp = new SyncProjects(Helper.get("trello.api.access.key"), Helper.get("trello.api.access.token"))
+
+if (options.m) {
+    sp.moveCards = true
+}
+
 sp.process()
 
 
@@ -15,7 +41,7 @@ sp.process()
  *
  */
 class SyncProjects {
-    boolean dry = true
+    boolean dry = false
     boolean moveCards = false
     String myBoardName
     String approvedListName

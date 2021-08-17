@@ -1,7 +1,7 @@
 package net.czela.trello;
 
-public class JsonUtil {
-    public static String escape(String raw) {
+class JsonUtil {
+    static String escape(String raw) {
         String escaped = raw;
         escaped = escaped.replace("\\", "\\\\");
         escaped = escaped.replace("\"", "\\\"");
